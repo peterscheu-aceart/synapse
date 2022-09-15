@@ -95,6 +95,7 @@ from synapse.storage.database import (
     DatabasePool,
     LoggingDatabaseConnection,
     LoggingTransaction,
+    PostgresEngine,
 )
 from synapse.storage.databases.main.receipts import ReceiptsWorkerStore
 from synapse.storage.databases.main.stream import StreamWorkerStore
@@ -445,6 +446,14 @@ class EventPushActionsWorkerStore(ReceiptsWorkerStore, StreamWorkerStore, SQLBas
             (ReceiptTypes.READ, ReceiptTypes.READ_PRIVATE),
         )
 
+        # PostgreSQL and SQLite differ in comparing scalar numerics.
+        if isinstance(self.database_engine, PostgresEngine):
+            # GREATEST ignores NULLs.
+            receipt_stream_clause = "GREATEST(receipt_stream_ordering, ?)"
+        else:
+            # MAX returns NULL if any are NULL, so COALESCE to 0 first.
+            receipt_stream_clause = "MAX(COALESCE(receipt_stream_ordering, 0), ?)"
+
         # First we pull the counts from the summary table.
         #
         # We check that `last_receipt_stream_ordering` matches the stream
@@ -474,8 +483,8 @@ class EventPushActionsWorkerStore(ReceiptsWorkerStore, StreamWorkerStore, SQLBas
                 ) AS receipts USING (thread_id)
                 WHERE room_id = ? AND user_id = ?
                 AND (
-                    (last_receipt_stream_ordering IS NULL AND stream_ordering > MAX(COALESCE(receipt_stream_ordering, 0), ?))
-                    OR last_receipt_stream_ordering = MAX(COALESCE(receipt_stream_ordering, 0), ?)
+                    (last_receipt_stream_ordering IS NULL AND stream_ordering > {receipt_stream_clause})
+                    OR last_receipt_stream_ordering = {receipt_stream_clause}
                 )
             """,
             (
@@ -516,7 +525,7 @@ class EventPushActionsWorkerStore(ReceiptsWorkerStore, StreamWorkerStore, SQLBas
             ) AS receipts USING (thread_id)
             WHERE user_id = ?
                 AND room_id = ?
-                AND stream_ordering > MAX(COALESCE(receipt_stream_ordering, 0), ?)
+                AND stream_ordering > {receipt_stream_clause}
                 AND highlight = 1
             GROUP BY thread_id
         """
@@ -601,7 +610,7 @@ class EventPushActionsWorkerStore(ReceiptsWorkerStore, StreamWorkerStore, SQLBas
             ) AS receipts USING (thread_id)
             WHERE user_id = ?
                 AND room_id = ?
-                AND stream_ordering > MAX(COALESCE(receipt_stream_ordering, 0), ?)
+                AND stream_ordering > {receipt_stream_clause}
                 AND NOT {thread_id_clause}
             GROUP BY thread_id
         """
