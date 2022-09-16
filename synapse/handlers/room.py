@@ -1067,6 +1067,7 @@ class RoomCreationHandler:
         # a map of event types, state keys -> event_ids. We collect these mappings this
         # as events are created (but not persisted to the db) to determine state for
         # future created events (as this info can't be pulled from the db)
+
         state_map: dict = {}
 
         def create_event_dict(etype: str, content: JsonDict, **kwargs: Any) -> JsonDict:
@@ -1151,7 +1152,7 @@ class RoomCreationHandler:
             prev_event_ids=[last_sent_event_id],
             depth=depth,
         )
-        # last_sent_event_id = member_event_id
+
         prev_event = [member_event_id]
 
         # update the depth and state map here as these are otherwise updated in
@@ -1218,6 +1219,7 @@ class RoomCreationHandler:
             current_state_group = pl_context._state_group
             await send(pl_event, pl_context, creator)
 
+
         events_to_send = []
         if room_alias and (EventTypes.CanonicalAlias, "") not in initial_state:
             room_alias_event = await create_event(
@@ -1248,6 +1250,7 @@ class RoomCreationHandler:
                 EventTypes.RoomHistoryVisibility,
                 {"history_visibility": config["history_visibility"]},
             )
+            
             assert current_state_group is not None
             visibility_context = await self.state.compute_event_context_for_batched(
                 visibility_event, state_map, current_state_group
@@ -1290,6 +1293,7 @@ class RoomCreationHandler:
                 encryption_event, state_map, current_state_group
             )
             events_to_send.append((encryption_event, encryption_context))
+
 
         last_event = await self.event_creation_handler.handle_create_room_events(
             creator, events_to_send
