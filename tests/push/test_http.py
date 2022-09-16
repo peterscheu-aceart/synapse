@@ -925,4 +925,3 @@ class HTTPPusherTests(HomeserverTestCase):
             channel.json_body["pushers"][0]["org.matrix.msc3881.device_id"],
             lookup_result.device_id,
         )
-
