@@ -362,11 +362,7 @@ class TypingWriterHandler(FollowerTypingHandler):
             )
             return
 
-        domains = await self._storage_controllers.state.get_current_hosts_in_room(
-            room_id
-        )
-
-        if self.server_name in domains:
+        if await self.store.is_host_joined(room_id, self.server_name):
             logger.info("Got typing update from %s: %r", user_id, content)
             now = self.clock.time_msec()
             self._member_typing_until[member] = now + FEDERATION_TIMEOUT
