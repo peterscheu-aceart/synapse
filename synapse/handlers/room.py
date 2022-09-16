@@ -1219,7 +1219,6 @@ class RoomCreationHandler:
             current_state_group = pl_context._state_group
             await send(pl_event, pl_context, creator)
 
-
         events_to_send = []
         if room_alias and (EventTypes.CanonicalAlias, "") not in initial_state:
             room_alias_event = await create_event(
@@ -1250,7 +1249,7 @@ class RoomCreationHandler:
                 EventTypes.RoomHistoryVisibility,
                 {"history_visibility": config["history_visibility"]},
             )
-            
+
             assert current_state_group is not None
             visibility_context = await self.state.compute_event_context_for_batched(
                 visibility_event, state_map, current_state_group
@@ -1293,7 +1292,6 @@ class RoomCreationHandler:
                 encryption_event, state_map, current_state_group
             )
             events_to_send.append((encryption_event, encryption_context))
-
 
         last_event = await self.event_creation_handler.handle_create_room_events(
             creator, events_to_send
