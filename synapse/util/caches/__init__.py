@@ -36,27 +36,58 @@ TRACK_MEMORY_USAGE = False
 # just before they are returned from the scrape endpoint.
 CACHE_METRIC_REGISTRY = DynamicCollectorRegistry()
 
-
 caches_by_name: Dict[str, Sized] = {}
-collectors_by_name: Dict[str, "CacheMetric"] = {}
 
-cache_size = Gauge("synapse_util_caches_cache_size", "", ["name"])
-cache_hits = Gauge("synapse_util_caches_cache_hits", "", ["name"])
-cache_evicted = Gauge("synapse_util_caches_cache_evicted_size", "", ["name", "reason"])
-cache_total = Gauge("synapse_util_caches_cache", "", ["name"])
-cache_max_size = Gauge("synapse_util_caches_cache_max_size", "", ["name"])
+cache_size = Gauge(
+    "synapse_util_caches_cache_size", "", ["name"], registry=CACHE_METRIC_REGISTRY
+)
+cache_hits = Gauge(
+    "synapse_util_caches_cache_hits", "", ["name"], registry=CACHE_METRIC_REGISTRY
+)
+cache_evicted = Gauge(
+    "synapse_util_caches_cache_evicted_size",
+    "",
+    ["name", "reason"],
+    registry=CACHE_METRIC_REGISTRY,
+)
+cache_total = Gauge(
+    "synapse_util_caches_cache", "", ["name"], registry=CACHE_METRIC_REGISTRY
+)
+cache_max_size = Gauge(
+    "synapse_util_caches_cache_max_size", "", ["name"], registry=CACHE_METRIC_REGISTRY
+)
 cache_memory_usage = Gauge(
     "synapse_util_caches_cache_size_bytes",
     "Estimated memory usage of the caches",
     ["name"],
+    registry=CACHE_METRIC_REGISTRY,
 )
 
-response_cache_size = Gauge("synapse_util_caches_response_cache_size", "", ["name"])
-response_cache_hits = Gauge("synapse_util_caches_response_cache_hits", "", ["name"])
-response_cache_evicted = Gauge(
-    "synapse_util_caches_response_cache_evicted_size", "", ["name", "reason"]
+response_cache_size = Gauge(
+    "synapse_util_caches_response_cache_size",
+    "",
+    ["name"],
+    registry=CACHE_METRIC_REGISTRY,
 )
-response_cache_total = Gauge("synapse_util_caches_response_cache", "", ["name"])
+response_cache_hits = Gauge(
+    "synapse_util_caches_response_cache_hits",
+    "",
+    ["name"],
+    registry=CACHE_METRIC_REGISTRY,
+)
+response_cache_evicted = Gauge(
+    "synapse_util_caches_response_cache_evicted_size",
+    "",
+    ["name", "reason"],
+    registry=CACHE_METRIC_REGISTRY,
+)
+response_cache_total = Gauge(
+    "synapse_util_caches_response_cache", "", ["name"], registry=CACHE_METRIC_REGISTRY
+)
+
+
+# Register our custom cache metrics registry with the global registry
+REGISTRY.register(CACHE_METRIC_REGISTRY)
 
 
 class EvictionReason(Enum):
@@ -152,7 +183,6 @@ def register_cache(
     resize_callback: Optional[Callable] = None,
 ) -> CacheMetric:
     """Register a cache object for metric collection and resizing.
-
     Args:
         cache_type: a string indicating the "type" of the cache. This is used
             only for deduplication so isn't too important provided it's constant.
@@ -164,7 +194,6 @@ def register_cache(
         resizable: Whether this cache supports being resized, in which case either
             resize_callback must be provided, or the cache must support set_max_size().
         resize_callback: A function which can be called to resize the cache.
-
     Returns:
         CacheMetric: an object which provides inc_{hits,misses,evictions} methods
     """
@@ -176,7 +205,6 @@ def register_cache(
     metric = CacheMetric(cache, cache_type, cache_name, collect_callback)
     metric_name = "cache_%s_%s" % (cache_type, cache_name)
     caches_by_name[cache_name] = cache
-
     CACHE_METRIC_REGISTRY.register_hook(metric_name, metric.collect)
     return metric
 

@@ -17,7 +17,7 @@ from functools import wraps
 from types import TracebackType
 from typing import Awaitable, Callable, Dict, Generator, Optional, Type, TypeVar
 
-from prometheus_client import Counter, CollectorRegistry
+from prometheus_client import CollectorRegistry, Counter, Metric
 from typing_extensions import Concatenate, ParamSpec, Protocol
 
 from synapse.logging.context import (
@@ -84,22 +84,16 @@ def measure_func(
     name: Optional[str] = None,
 ) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
     """Decorate an async method with a `Measure` context manager.
-
     The Measure is created using `self.clock`; it should only be used to decorate
     methods in classes defining an instance-level `clock` attribute.
-
     Usage:
-
     @measure_func()
     async def foo(...):
         ...
-
     Which is analogous to:
-
     async def foo(...):
         with Measure(...):
             ...
-
     """
 
     def wrapper(
@@ -194,7 +188,6 @@ class Measure:
 
     def get_resource_usage(self) -> ContextResourceUsage:
         """Get the resources used within this Measure block
-
         If the Measure block is still active, returns the resource usage so far.
         """
         return self._logging_context.get_resource_usage()
@@ -209,11 +202,11 @@ class Measure:
 
         # TODO: Add other in flight metrics.
 
+
 class DynamicCollectorRegistry(CollectorRegistry):
     """
     Custom Prometheus Collector registry that calls a hook first, allowing you
     to update metrics on-demand.
-
     Don't forget to register this registry with the main registry!
     """
 
@@ -237,4 +230,3 @@ class DynamicCollectorRegistry(CollectorRegistry):
         """
 
         self._pre_update_hooks[metric_name] = hook
-
