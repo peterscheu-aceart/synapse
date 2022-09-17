@@ -143,6 +143,11 @@ class TypingNotificationsTestCase(unittest.HomeserverTestCase):
 
         self.datastore.get_users_in_room = get_users_in_room
 
+        async def is_host_joined(room_id: str, host: str):
+            return any(host == member.domain for member in self.room_members)
+
+        self.datastore.is_host_joined = is_host_joined
+
         self.datastore.get_user_directory_stream_pos = Mock(
             side_effect=(
                 # we deliberately return a non-None stream pos to avoid doing an initial_spam
